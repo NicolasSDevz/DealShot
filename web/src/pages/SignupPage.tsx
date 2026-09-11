@@ -3,14 +3,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
-import { saveCompanyProfile, buildKiwifyCheckoutUrl } from "../lib/db";
-import { formatCpfCnpj, formatBRL } from "../lib/calc";
+import { saveCompanyProfile } from "../lib/db";
+import { formatCpfCnpj } from "../lib/calc";
 import { EyeIcon, EyeOffIcon } from "../components/Icons";
 
-// Teste de oferta: preço único, sem planos/limites, pra validar se o app vende antes de
-// reativar a grade de planos normal (Start/Converte/Ilimitado). O checkout roda na Kiwify em
-// vez do Asaas -- o link fica em lib/db.ts (KIWIFY_CHECKOUT_URL).
-const OFERTA_PRECO = 29.9;
+// Fase manual, antes de hospedar oficialmente num domínio: o pagamento acontece fora do app
+// (Nicolas manda o link da Kiwify direto pra pessoa) e só depois de confirmado ele libera o
+// link desta tela. Por isso não tem nenhuma etapa de pagamento aqui -- ao criar a conta, ela já
+// nasce ativa com acesso ilimitado por 1 mês (precisa da regra extra em firestore.rules, ver
+// comentário lá). O fluxo automático via webhook da Kiwify (KIWIFY_CHECKOUT_URL em lib/db.ts,
+// web/api/kiwify-webhook.ts) fica pronto pra quando o processo virar self-service de verdade.
+const ACESSO_DIAS = 30;
 
 export default function SignupPage() {
   const [companyName, setCompanyName] = useState("");
@@ -49,17 +52,19 @@ export default function SignupPage() {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       uid = cred.user.uid;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + ACESSO_DIAS);
       await setDoc(doc(db, "accounts", uid), {
         companyName: companyName.trim(),
         email: email.trim(),
         ownerUid: uid,
-        // "sem_limite" pra não travar orçamento nenhum durante o teste da oferta -- sem
-        // cobrança automática ainda, então fica "pending_payment" até confirmar o pagamento
-        // na Kiwify e ativar a conta pelo painel admin.
+        // O pagamento já foi confirmado fora do app (Kiwify, manual) antes desse link ser
+        // liberado pra pessoa -- então a conta já nasce ativa, sem limite de orçamentos, com
+        // 1 mês de acesso a partir de agora.
         plan: "sem_limite",
         billingCycle: "mensal",
-        status: "pending_payment",
-        subscriptionExpiresAt: null,
+        status: "active",
+        subscriptionExpiresAt: Timestamp.fromDate(expiresAt),
         createdAt: Timestamp.now(),
       });
       // Já aproveita o nome e o CNPJ/CPF que ele acabou de digitar, pra não pedir de novo
@@ -77,15 +82,7 @@ export default function SignupPage() {
       return;
     }
 
-    // A conta já existe nesse ponto (login + doc criados) -- se não tiver link da Kiwify
-    // configurado ainda, manda pro app, que mostra a tela de "assinatura pendente" (com o mesmo
-    // botão de ir pro checkout, pra tentar de novo mais tarde).
-    const checkoutUrl = buildKiwifyCheckoutUrl(uid);
-    if (checkoutUrl) {
-      window.location.href = checkoutUrl;
-    } else {
-      navigate("/");
-    }
+    navigate("/");
   }
 
   return (
@@ -95,15 +92,6 @@ export default function SignupPage() {
         <p className="panel-help" style={{ marginTop: 0 }}>
           Acesso completo: calculadora, propostas com funil, PDF profissional e gráficos de resultados.
         </p>
-
-        <div className="offer-card">
-          <span className="offer-card-badge">Oferta de lançamento</span>
-          <span className="offer-card-price">
-            {formatBRL(OFERTA_PRECO)}
-            <span className="offer-card-period">/mês</span>
-          </span>
-          <span className="offer-card-note">Sem limite de orçamentos, sem pegadinha.</span>
-        </div>
 
         <div className="field">
           <label htmlFor="signup-company">Nome da empresa</label>
@@ -121,7 +109,7 @@ export default function SignupPage() {
             required
           />
           <p className="panel-help" style={{ margin: "4px 0 0" }}>
-            Necessário pra gerar a cobrança.
+            Fica registrado no perfil da sua empresa (dá pra editar depois).
           </p>
         </div>
         <div className="field">
@@ -183,7 +171,7 @@ export default function SignupPage() {
           </span>
         </label>
         <button className="save-btn signup-cta" type="submit" style={{ width: "100%" }} disabled={submitting}>
-          {submitting ? "Criando..." : "Criar conta e ir pro pagamento"}
+          {submitting ? "Criando..." : "Criar conta"}
         </button>
         <p className="save-msg" role="alert" aria-live="assertive">
           {error}

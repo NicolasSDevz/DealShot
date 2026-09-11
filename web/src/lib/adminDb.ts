@@ -106,11 +106,15 @@ export async function adminRemoveAdmin(uid: string) {
  * Cria uma conta de cliente na mão (pra demonstração, parceria ou teste guiado) sem passar
  * pela tela de cadastro: mesmo fluxo de auth do adminAddAdmin (usuário criado num app Firebase
  * secundário, senha temporária descartada, e-mail de redefinição enviado pro cliente definir a
- * própria senha). Por padrão entra no plano "sem_limite" e sem vencimento -- sem travar em
- * nenhum limite de orçamentos -- é só uma conta pronta pro cliente já abrir e usar.
+ * própria senha). Por padrão entra no plano "sem_limite" com 30 dias de acesso -- dá pra
+ * estender depois pelo botão "Renovar" na lista de clientes. IMPORTANTE: subscriptionExpiresAt
+ * nunca pode ficar null com status "active" -- getAccountStatus (lib/db.ts) trata null como
+ * "sempre vencido" e bloqueia o acesso na hora.
  */
 export async function adminCreateTestAccount(companyName: string, email: string, plan: string = "sem_limite") {
   const uid = await createAuthUserWithoutSignIn(email);
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 30);
   await setDoc(doc(db, "accounts", uid), {
     companyName: companyName.trim(),
     email: email.trim(),
@@ -118,7 +122,7 @@ export async function adminCreateTestAccount(companyName: string, email: string,
     plan,
     billingCycle: "mensal",
     status: "active",
-    subscriptionExpiresAt: null,
+    subscriptionExpiresAt: Timestamp.fromDate(expiresAt),
     createdAt: Timestamp.now(),
   });
   await setDoc(doc(db, "accounts", uid, "companyProfile", "profile"), { companyName: companyName.trim() }, { merge: true });
