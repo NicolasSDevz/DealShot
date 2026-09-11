@@ -1,4 +1,4 @@
-import { calcDeal, formatBRL, formatDateBR, type Deal } from "./calc";
+import { calcDeal, formatBRL, formatDateBR, num, type Deal } from "./calc";
 import type { CompanyProfile } from "./db";
 
 type RGB = [number, number, number];
@@ -240,6 +240,19 @@ async function buildProposalDoc(
     y += lines.length * 4.5 + 6;
   }
 
+  const autoridade = [
+    num(company.anosExperiencia) > 0 ? `${company.anosExperiencia}+ anos de experiência` : null,
+    num(company.obrasEntregues) > 0 ? `${company.obrasEntregues}+ obras entregues` : null,
+  ].filter(Boolean);
+  if (autoridade.length > 0) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...BLUE_DARK);
+    ensureSpace(8);
+    doc.text(autoridade.join("   •   "), MARGIN_X, y);
+    y += 8;
+  }
+
   sectionTitle("Dados do cliente e da obra");
   infoCard([
     ["Cliente", deal.clientName || "-"],
@@ -282,7 +295,16 @@ async function buildProposalDoc(
     costsTable(rows);
   }
 
-  priceBanner("Valor final da proposta", formatBRL(calc.valorFinal));
+  if (deal.ofertarPremium && num(deal.premiumValor) > 0) {
+    sectionTitle("Opções de investimento");
+    if (deal.premiumDescricao) {
+      noteBox(`A opção Premium inclui: ${deal.premiumDescricao}`);
+    }
+    priceBanner("Opção Padrão", formatBRL(calc.valorFinal));
+    priceBanner("Opção Premium", formatBRL(num(deal.premiumValor)));
+  } else {
+    priceBanner("Valor final da proposta", formatBRL(calc.valorFinal));
+  }
 
   drawFooter();
 

@@ -75,6 +75,31 @@ function daysSince(iso: string | null | undefined) {
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
 }
 
+// Cadência de follow-up do roteiro de vendas: mesmo dia (confirma recebimento), dia 2 (mostra um
+// serviço parecido), dia 4 (cria urgência com a validade), dia 5 (encerra ou renova). Em vez de
+// guardar "em que dia da cadência estamos" como campo à parte, deriva sempre de `sentAt` -- assim
+// nunca desalinha do que já está salvo, mesmo que a pessoa abra o card dias depois.
+const FOLLOWUP_CADENCE = [
+  { atDay: 0, templateId: "confirmacao_recebimento", hint: "Confirme que a proposta chegou certinho" },
+  { atDay: 2, templateId: "primeiro_followup", hint: "Dia 2: mande uma foto de um serviço parecido" },
+  { atDay: 4, templateId: "criar_urgencia", hint: "Dia 4: crie urgência com a validade da proposta" },
+  { atDay: 5, templateId: "encerramento_proposta", hint: "Dia 5: hora de encerrar ou renovar a proposta" },
+] as const;
+
+function cadenceStepFor(sentDays: number | null) {
+  if (sentDays == null) return null;
+  let step: (typeof FOLLOWUP_CADENCE)[number] | null = null;
+  for (const s of FOLLOWUP_CADENCE) {
+    if (sentDays >= s.atDay) step = s;
+  }
+  return step;
+}
+
+function nextCadenceStep(sentDays: number | null) {
+  if (sentDays == null) return null;
+  return FOLLOWUP_CADENCE.find((s) => s.atDay > sentDays) || null;
+}
+
 function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowUpDate, onSetPagamento }: Props & { deal: Deal }) {
   const { alertDialog, confirmDialog } = useDialog();
   const isDecided = deal.stage === "fechado" || deal.stage === "perdido";
@@ -86,7 +111,9 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
   // vira uma parede de campos. As pílulas de status ficam sempre visíveis (é a ação mais usada),
   // o resto (follow-up, pagamento, mensagem) só aparece ao expandir.
   const [expanded, setExpanded] = useState(false);
-  const [templateId, setTemplateId] = useState(MESSAGE_TEMPLATES[0].id);
+  const [templateId, setTemplateId] = useState(
+    () => cadenceStepFor(daysSince(deal.sentAt))?.templateId || MESSAGE_TEMPLATES[0].id,
+  );
   const template = MESSAGE_TEMPLATES.find((t) => t.id === templateId) || MESSAGE_TEMPLATES[0];
   const companyName = company.companyName || "";
   const message = template.build(deal, companyName, num(deal.valorFinal));
@@ -143,8 +170,21 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
   }
 
   const sentDays = daysSince(deal.sentAt);
+  const cadenceStep = deal.stage === "aguardando" ? cadenceStepFor(sentDays) : null;
+  const nextStep = deal.stage === "aguardando" ? nextCadenceStep(sentDays) : null;
   const stageLabel = STAGES.find((s) => s.id === deal.stage)?.label || deal.stage;
   const placeLabel = deal.obraNome || deal.endereco || "";
+
+  // Avança a data de follow-up pra próxima etapa da cadência (dia 2 -> dia 4 -> dia 5), contada a
+  // partir do envio original -- não de hoje, senão duas pessoas marcando "já fiz" em dias
+  // diferentes iam acabar com datas diferentes pro mesmo cliente sem motivo.
+  function handleAdvanceCadence() {
+    if (!nextStep || !deal.sentAt) return;
+    const next = new Date(deal.sentAt);
+    next.setDate(next.getDate() + nextStep.atDay);
+    onSetFollowUpDate(deal, next.toISOString().slice(0, 10));
+    setTemplateId(nextStep.templateId);
+  }
 
   // Quem fecha a venda escolhe a forma de pagamento, mas quase nunca digita o valor recebido --
   // pra formas pagas à vista, já cravamos o valor total automaticamente (dá pra corrigir depois).
@@ -215,6 +255,7 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
         <span className="deal-value">{formatBRL(deal.valorFinal)}</span>
       </div>
       {deal.stage === "aguardando" && sentDays !== null && <p className="deal-meta">Enviada há {sentDays} dia(s)</p>}
+      {cadenceStep && <p className="deal-meta cadence-hint">📅 {cadenceStep.hint}</p>}
       {placeLabel && <p className="deal-meta">{placeLabel}</p>}
 
       {deal.stage === "fechado" && (
@@ -274,6 +315,11 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
                 value={deal.followUpDate || ""}
                 onChange={(e) => onSetFollowUpDate(deal, e.target.value)}
               />
+              {nextStep && (
+                <button type="button" className="link-btn" style={{ marginTop: 6 }} onClick={handleAdvanceCadence}>
+                  já fiz esse contato → agendar {nextStep.hint.toLowerCase()}
+                </button>
+              )}
             </div>
           )}
 
@@ -439,7 +485,14 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
       )}
 
       {presenting && (
-        <PresentationView deal={deal} companyName={companyName} logoUrl={company.logoUrl} onClose={() => setPresenting(false)} />
+        <PresentationView
+          deal={deal}
+          companyName={companyName}
+          logoUrl={company.logoUrl}
+          anosExperiencia={company.anosExperiencia}
+          obrasEntregues={company.obrasEntregues}
+          onClose={() => setPresenting(false)}
+        />
       )}
     </div>
   );

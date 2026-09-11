@@ -31,6 +31,8 @@ export default function CompanySetupForm({ initial, onSave, onCancel, bare = fal
   const [telefone, setTelefone] = useState(initial.telefone || "");
   const [email, setEmail] = useState(initial.email || "");
   const [descricao, setDescricao] = useState(initial.descricao || "");
+  const [anosExperiencia, setAnosExperiencia] = useState(initial.anosExperiencia || "");
+  const [obrasEntregues, setObrasEntregues] = useState(initial.obrasEntregues || "");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -61,6 +63,8 @@ export default function CompanySetupForm({ initial, onSave, onCancel, bare = fal
         telefone: telefone.trim(),
         email: email.trim(),
         descricao: descricao.trim(),
+        anosExperiencia: anosExperiencia.trim(),
+        obrasEntregues: obrasEntregues.trim(),
       };
       if (file && !canSaveLogo) {
         // Plano Teste: não sobe a logo pro Storage -- só guarda em base64 na tela, pra usar
@@ -119,6 +123,35 @@ export default function CompanySetupForm({ initial, onSave, onCancel, bare = fal
           Aparece logo abaixo do nome da empresa, no início do PDF dos orçamentos.
         </p>
       </div>
+      <div className="cost-group-fields" style={{ marginBottom: 16 }}>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label htmlFor="company-anos">Há quantos anos no mercado (opcional)</label>
+          <input
+            id="company-anos"
+            className="input"
+            type="number"
+            min={0}
+            value={anosExperiencia}
+            onChange={(e) => setAnosExperiencia(e.target.value)}
+            placeholder="Ex: 8"
+          />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label htmlFor="company-obras">Quantas obras já entregou (opcional)</label>
+          <input
+            id="company-obras"
+            className="input"
+            type="number"
+            min={0}
+            value={obrasEntregues}
+            onChange={(e) => setObrasEntregues(e.target.value)}
+            placeholder="Ex: 80"
+          />
+        </div>
+      </div>
+      <p className="microlabel" style={{ margin: "-10px 0 16px" }}>
+        Viram diferenciais automáticos na apresentação e no PDF (ex: "Mais de 8 anos de experiência"). Deixe em branco pra não mostrar.
+      </p>
       <div className="field">
         <span id="company-logo-label">Logo da empresa (opcional)</span>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

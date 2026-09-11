@@ -1053,6 +1053,56 @@
   color: var(--amber-400);
 }
 
+.pres-price-options {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.pres-price-card {
+  flex: 1 1 200px;
+  max-width: 260px;
+  border: 1.5px solid var(--n-800);
+  border-radius: 14px;
+  padding: 20px 16px;
+}
+
+.pres-price-card.premium {
+  border-color: var(--amber-400);
+  background: var(--amber-300);
+}
+
+.pres-price-card-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.7;
+  margin: 0 0 6px;
+}
+
+.pres-price-card-value {
+  font-size: clamp(24px, 5vw, 34px);
+  font-weight: 800;
+  color: var(--amber-400);
+  margin: 0 0 8px;
+}
+
+.pres-price-card-note {
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.8;
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .pres-price-card {
+    max-width: 100%;
+  }
+}
+
 .pres-nav {
   display: flex;
   align-items: center;
@@ -1911,6 +1961,22 @@
 
 .payment-value-field {
   margin-bottom: 0;
+}
+
+.premium-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.premium-toggle input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--amber-400);
+  cursor: pointer;
 }
 
 .installment-box {

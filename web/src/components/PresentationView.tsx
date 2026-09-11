@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { calcDeal, formatBRL, type Deal } from "../lib/calc";
+import { calcDeal, formatBRL, num, type Deal } from "../lib/calc";
 
 interface Props {
   deal: Deal;
   companyName: string;
   logoUrl?: string | null;
+  /** "Há quantos anos no mercado" cadastrado no perfil da empresa -- vira diferencial automático. */
+  anosExperiencia?: string;
+  /** "Quantas obras já entregou" -- idem. */
+  obrasEntregues?: string;
   onClose: () => void;
 }
 
@@ -17,8 +21,17 @@ const DIFERENCIAIS = [
   "Produtos com ficha técnica de segurança",
 ];
 
-export default function PresentationView({ deal, companyName, logoUrl, onClose }: Props) {
+export default function PresentationView({ deal, companyName, logoUrl, anosExperiencia, obrasEntregues, onClose }: Props) {
   const calc = calcDeal(deal);
+  const hasPremium = deal.ofertarPremium && num(deal.premiumValor) > 0;
+  // Autoridade: se a empresa cadastrou tempo de mercado/obras entregues, isso entra como os
+  // primeiros diferenciais (prova concreta pesa mais que qualificação genérica) -- senão a lista
+  // fica só com os diferenciais padrão.
+  const diferenciais = [
+    ...(num(anosExperiencia) > 0 ? [`Mais de ${anosExperiencia} anos de experiência em limpeza pós-obra`] : []),
+    ...(num(obrasEntregues) > 0 ? [`Mais de ${obrasEntregues} obras entregues com sucesso`] : []),
+    ...DIFERENCIAIS,
+  ];
   const [slide, setSlide] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
@@ -57,23 +70,46 @@ export default function PresentationView({ deal, companyName, logoUrl, onClose }
       <p className="pres-eyebrow">Por que fechar com a gente</p>
       <h2 className="pres-h2">Diferenciais</h2>
       <ul className="pres-list">
-        {DIFERENCIAIS.map((d) => (
+        {diferenciais.map((d) => (
           <li key={d}>{d}</li>
         ))}
       </ul>
     </div>,
 
-    // 5. Preço (sem detalhamento de custo — só o valor final)
-    <div className="pres-slide" key="s4">
-      <p className="pres-eyebrow">Investimento total</p>
-      <p className="pres-price">{formatBRL(calc.valorFinal)}</p>
-      <p className="pres-sub">Proposta válida por 7 dias</p>
-    </div>,
+    // 5. Preço -- sem detalhamento de custo, e com uma segunda opção (Premium) quando ativada,
+    // pra ancorar o preço: o cliente compara as duas opções entre si, não com o concorrente.
+    hasPremium ? (
+      <div className="pres-slide" key="s4">
+        <p className="pres-eyebrow">Escolha sua opção</p>
+        <div className="pres-price-options">
+          <div className="pres-price-card">
+            <p className="pres-price-card-label">Padrão</p>
+            <p className="pres-price-card-value">{formatBRL(calc.valorFinal)}</p>
+            <p className="pres-price-card-note">Escopo completo, conforme descrito</p>
+          </div>
+          <div className="pres-price-card premium">
+            <p className="pres-price-card-label">Premium</p>
+            <p className="pres-price-card-value">{formatBRL(num(deal.premiumValor))}</p>
+            <p className="pres-price-card-note">{deal.premiumDescricao || "Inclui tudo da opção Padrão + benefícios extras"}</p>
+          </div>
+        </div>
+        <p className="pres-sub">Proposta válida por 5 dias</p>
+      </div>
+    ) : (
+      <div className="pres-slide" key="s4">
+        <p className="pres-eyebrow">Investimento total</p>
+        <p className="pres-price">{formatBRL(calc.valorFinal)}</p>
+        <p className="pres-sub">Proposta válida por 5 dias</p>
+      </div>
+    ),
 
     // 6. Fechamento
     <div className="pres-slide" key="s5">
       <h2 className="pres-h2">Podemos agendar?</h2>
-      <p className="pres-body">Fale com a gente pelo WhatsApp pra confirmar a data e fechar o serviço.</p>
+      <p className="pres-body">
+        Fale com a gente pelo WhatsApp pra confirmar a data e fechar o serviço — responda <strong>SIM</strong> nessa conversa que já
+        agendamos o início.
+      </p>
     </div>,
   ];
 

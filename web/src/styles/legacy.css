@@ -202,14 +202,37 @@ input, select {
 }
 
 .auth-screen {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  overflow: hidden;
+}
+
+/* Ilustração de fundo (skyline de obra + guindaste) atrás do formulário -- um PNG só, desenhado
+   em tons claros sobre fundo transparente. No tema escuro aparece direto (linhas claras sobre
+   fundo quase preto); no tema claro a gente inverte as cores com filter (linhas escuras sobre
+   fundo quase branco), em vez de gerar dois arquivos. Fica num ::before em vez de direto no
+   .auth-screen porque o filter: invert() do tema claro não pode pegar o formulário também. */
+.auth-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("../assets/auth-bg.png");
+  background-size: cover;
+  background-position: center bottom;
+  pointer-events: none;
+}
+
+:root:not([data-theme="dark"]) .auth-screen::before {
+  filter: invert(1);
 }
 
 .auth-panel {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 380px;
 }
@@ -496,6 +519,7 @@ select.input { cursor: pointer; }
 .deal-name { flex: 1; font-size: 14.5px; font-weight: 700; color: var(--n-200); text-align: left; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deal-name:hover { color: var(--amber-400); }
 .deal-meta { font-size: 11.5px; color: var(--n-500); margin: 6px 0 0; }
+.deal-meta.cadence-hint { color: var(--amber-500); font-weight: 600; }
 .deal-value {
   font-size: 14px;
   font-weight: 700;

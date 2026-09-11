@@ -15,8 +15,13 @@ export const MESSAGE_TEMPLATES: MessageTemplate[] = [
       `Olá, ${d.clientName || "tudo bem"}! Segue o orçamento do serviço solicitado, no valor de ${formatBRL(valor)}. Qualquer dúvida, estou à disposição. — ${empresa}`,
   },
   {
+    id: "confirmacao_recebimento",
+    label: "Confirmar recebimento (mesmo dia)",
+    build: (d, empresa) => `Oi, ${d.clientName || ""}! Chegou certinho a proposta? Qualquer dúvida estou aqui. — ${empresa}`,
+  },
+  {
     id: "primeiro_followup",
-    label: "Primeiro follow-up",
+    label: "Primeiro follow-up (dia 2)",
     build: (d, empresa) =>
       `Oi, ${d.clientName || ""}! Passando pra saber se conseguiu dar uma olhada na proposta que enviei. Fico à disposição pra qualquer ajuste. — ${empresa}`,
   },
@@ -25,6 +30,18 @@ export const MESSAGE_TEMPLATES: MessageTemplate[] = [
     label: "Segundo follow-up",
     build: (d, empresa) =>
       `Oi, ${d.clientName || ""}, tudo bem? Ainda estou à disposição caso queira fechar o serviço ou tirar alguma dúvida sobre o orçamento. — ${empresa}`,
+  },
+  {
+    id: "criar_urgencia",
+    label: "Criar urgência (dia 4)",
+    build: (d, empresa) =>
+      `Oi, ${d.clientName || ""}! Sua proposta vence amanhã. Quer que eu renove ou já confirmamos a data de início? — ${empresa}`,
+  },
+  {
+    id: "encerramento_proposta",
+    label: "Encerrar proposta (dia 5)",
+    build: (d, empresa) =>
+      `Oi, ${d.clientName || ""}! Vou encerrar sua proposta hoje, já que não tivemos retorno. Se precisar no futuro, é só chamar. — ${empresa}`,
   },
   {
     id: "nao_respondeu",

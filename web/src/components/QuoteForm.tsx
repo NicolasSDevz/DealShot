@@ -710,6 +710,51 @@ export default function QuoteForm({ initialDeal, company, obraNumero, onSave, on
               <span>Preço sugerido</span>
               <strong>{formatBRL(calc.valorFinal)}</strong>
             </div>
+
+            <div className="cost-group premium-option" style={{ marginTop: 14 }}>
+              <label className="premium-toggle">
+                <input
+                  type="checkbox"
+                  checked={deal.ofertarPremium}
+                  onChange={(e) => set("ofertarPremium", e.target.checked)}
+                />
+                <span>
+                  <strong>Oferecer uma opção Premium</strong>
+                  <p className="microlabel" style={{ margin: "2px 0 0" }}>
+                    Mostra 2 preços na apresentação e no PDF pro cliente — ele para de comparar seu preço com o do concorrente e passa a
+                    escolher entre as suas duas opções.
+                  </p>
+                </span>
+              </label>
+
+              {deal.ofertarPremium && (
+                <div className="cost-group-fields" style={{ marginTop: 12 }}>
+                  <div className="field field-wide">
+                    <label htmlFor="qf-premiumDescricao">O que a Premium tem a mais</label>
+                    <textarea
+                      id="qf-premiumDescricao"
+                      className="input"
+                      rows={2}
+                      style={{ resize: "vertical" }}
+                      placeholder="Ex: limpeza de vidros externos em altura, proteção de superfícies nobres e relatório fotográfico antes e depois."
+                      value={deal.premiumDescricao}
+                      onChange={(e) => set("premiumDescricao", e.target.value)}
+                    />
+                  </div>
+                  {field(
+                    "Valor da opção Premium",
+                    <AffixInput
+                      type="number"
+                      prefix="R$"
+                      placeholder={(calc.valorFinal * 1.35).toFixed(2)}
+                      value={deal.premiumValor}
+                      onChange={(e) => set("premiumValor", e.target.value)}
+                    />,
+                    "premiumValor",
+                  )}
+                </div>
+              )}
+            </div>
           </>
         )}
 
@@ -812,6 +857,8 @@ export default function QuoteForm({ initialDeal, company, obraNumero, onSave, on
           deal={{ ...deal, valorFinal: calc.valorFinal }}
           companyName={company.companyName || ""}
           logoUrl={company.logoUrl}
+          anosExperiencia={company.anosExperiencia}
+          obrasEntregues={company.obrasEntregues}
           onClose={() => setPresenting(false)}
         />
       )}

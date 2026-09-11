@@ -19,6 +19,7 @@ import { planLimit, planResetsMonthly, usedForPlanLimit, PLANS, type Deal, type 
 import QuoteForm from "./QuoteForm";
 import ProposalsBoard from "./ProposalsBoard";
 import SalesOverview from "./SalesOverview";
+import ChecklistPanel from "./ChecklistPanel";
 import CompanySetupForm from "./CompanySetupForm";
 import ThemeToggle from "./ThemeToggle";
 import Modal from "./Modal";
@@ -27,7 +28,7 @@ import LimitModal from "./LimitModal";
 import UpgradeModal from "./UpgradeModal";
 import { UserIcon, LogoutIcon, RocketIcon } from "./Icons";
 
-type Tab = "calc" | "funil" | "painel";
+type Tab = "calc" | "funil" | "painel" | "checklist";
 
 // Teste de oferta única (ver SignupPage.tsx): esconde o badge de uso ("X/Y orçamentos") e o
 // botão de assinatura no topo enquanto a grade de planos normal fica de lado. Só mude pra
@@ -200,7 +201,17 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
   async function handleChangeStage(deal: Deal, stage: string) {
     const patch: Partial<Deal> = { stage };
     if (stage === "fechado" && !deal.closedAt) patch.closedAt = new Date().toISOString();
-    if (stage === "aguardando" && !deal.sentAt) patch.sentAt = new Date().toISOString();
+    if (stage === "aguardando" && !deal.sentAt) {
+      patch.sentAt = new Date().toISOString();
+      // Sugere o "dia 2" da cadência de follow-up do roteiro de vendas (confirma no mesmo dia,
+      // acompanha no dia 2) como primeira data, só se a pessoa ainda não tiver escolhido uma --
+      // nunca sobrescreve uma data que ela já ajustou na mão.
+      if (!deal.followUpDate) {
+        const suggested = new Date();
+        suggested.setDate(suggested.getDate() + 2);
+        patch.followUpDate = suggested.toISOString().slice(0, 10);
+      }
+    }
     const updated = { ...deal, ...patch };
     await updateProposal(accountId, deal.id!, updated);
     setDeals((ds) => ds.map((d) => (d.id === deal.id ? updated : d)));
@@ -266,6 +277,9 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
             </button>
             <button className={`tabbtn${tab === "painel" ? " active" : ""}`} aria-current={tab === "painel" ? "page" : undefined} onClick={() => setTab("painel")}>
               Resultados
+            </button>
+            <button className={`tabbtn${tab === "checklist" ? " active" : ""}`} aria-current={tab === "checklist" ? "page" : undefined} onClick={() => setTab("checklist")}>
+              Checklist
             </button>
           </nav>
           {SHOW_PLAN_UI && !asAdmin && (
@@ -365,6 +379,7 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
           />
         )}
         {tab === "painel" && <SalesOverview deals={deals} />}
+        {tab === "checklist" && <ChecklistPanel accountId={accountId} initial={status.checklistAtendimento || {}} />}
       </main>
     </div>
   );

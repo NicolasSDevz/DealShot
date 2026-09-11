@@ -54,6 +54,13 @@ export interface AccountStatus {
   isExpired: boolean;
   isSuspended: boolean;
   isActiveAndValid: boolean;
+  /** Quais itens do checklist de atendimento já estão marcados como prática consolidada. */
+  checklistAtendimento?: Record<string, boolean>;
+}
+
+/** Salva o checklist de boas práticas de atendimento (ver ChecklistPanel.tsx) -- só o dono da conta vê. */
+export async function saveChecklistAtendimento(accountId: string, items: Record<string, boolean>) {
+  await setDoc(doc(db, "accounts", accountId), { checklistAtendimento: items }, { merge: true });
 }
 
 /** Lê o status/assinatura de uma conta (mesma lógica de firebase-client.js: getAccountStatus). */
@@ -149,6 +156,10 @@ export interface CompanyProfile {
   email?: string;
   /** Frase curta sobre a empresa (ex: "10 anos de experiência em limpeza pós-obra") -- aparece no PDF. */
   descricao?: string;
+  /** Há quantos anos no mercado -- vira um diferencial de autoridade na apresentação/PDF. */
+  anosExperiencia?: string;
+  /** Quantas obras já entregou -- idem. */
+  obrasEntregues?: string;
 }
 
 export async function getCompanyProfile(accountId: string): Promise<CompanyProfile> {

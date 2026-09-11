@@ -64,6 +64,14 @@ export interface Deal {
   produtos: ProdutoItem[];
   /** Override manual do % de materiais sobre o custo-base — vazio usa a faixa automática (4/8/12%). */
   materialPctManual: string;
+
+  /** Mostra uma segunda opção mais cara na apresentação/PDF do cliente -- técnica de ancoragem de
+   * preço: com 2 opções, o cliente compara as duas entre si em vez de comparar com o concorrente. */
+  ofertarPremium: boolean;
+  /** O que a opção Premium tem a mais além do escopo padrão (ex: "vidros externos em altura, relatório fotográfico"). */
+  premiumDescricao: string;
+  /** Valor da opção Premium (R$) -- decidido por quem faz o orçamento, não calculado automaticamente. */
+  premiumValor: string;
 }
 
 export interface ProdutoItem {
@@ -179,6 +187,10 @@ export function emptyDeal(): Deal {
     valorPagamento: "",
     produtos: [],
     materialPctManual: "",
+
+    ofertarPremium: false,
+    premiumDescricao: "",
+    premiumValor: "",
   };
 }
 
