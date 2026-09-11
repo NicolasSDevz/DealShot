@@ -1226,6 +1226,23 @@
   text-decoration: line-through;
 }
 
+.checklist-item.checked .checklist-item-why {
+  text-decoration: none;
+}
+
+.checklist-item span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checklist-item-why {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--n-600);
+  line-height: 1.35;
+}
+
 .hint-banner {
   display: flex;
   align-items: center;
