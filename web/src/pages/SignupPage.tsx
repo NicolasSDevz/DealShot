@@ -173,7 +173,7 @@ export default function SignupPage() {
         <button className="save-btn signup-cta" type="submit" style={{ width: "100%" }} disabled={submitting}>
           {submitting ? "Criando..." : "Criar conta"}
         </button>
-        <p className="save-msg" role="alert" aria-live="assertive">
+        <p className="save-msg is-error" role="alert" aria-live="assertive">
           {error}
         </p>
         <p className="panel-help" style={{ textAlign: "center" }}>

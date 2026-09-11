@@ -102,7 +102,7 @@ export default function LoginPage({ adminHint = false }: { adminHint?: boolean }
         <button className="save-btn" type="submit" style={{ width: "100%" }} disabled={submitting}>
           Entrar
         </button>
-        <p className="save-msg" role="alert" aria-live="assertive">
+        <p className="save-msg is-error" role="alert" aria-live="assertive">
           {error}
         </p>
         <p className={`save-msg${resetError ? " is-error" : ""}`} role="status" aria-live="polite">

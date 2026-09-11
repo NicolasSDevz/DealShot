@@ -94,7 +94,7 @@ export default function UpgradeModal({ accountId, email, companyName, cnpj, curr
           </div>
         )}
 
-        <p className="save-msg" role="alert" aria-live="assertive">
+        <p className="save-msg is-error" role="alert" aria-live="assertive">
           {error}
         </p>
 
