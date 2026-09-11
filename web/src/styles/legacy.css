@@ -181,9 +181,12 @@ input, select {
 @media (max-width: 640px) {
   .topbar { padding: 12px 16px; }
   .main { padding: 16px; }
-  .nav-area { width: 100%; }
-  .tabnav { flex: 1 1 auto; width: auto; flex-wrap: wrap; overflow-x: visible; }
-  .tabbtn { flex: 1; justify-content: center; padding: 8px 6px; font-size: 13px; }
+  /* 4 abas + botão de tema não cabem numa linha só no celular -- em vez de deixar o botão de
+     tema "sobrar" sozinho numa linha, ele fica ao lado das abas (que passam a ocupar a largura
+     toda, num grid 2x2 previsível) e as duas linhas ficam com a mesma largura. */
+  .nav-area { width: 100%; align-items: flex-start; }
+  .tabnav { flex: 1 1 auto; width: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .tabbtn { justify-content: center; padding: 8px 6px; font-size: 13px; }
 }
 
 /* ---------- calc tab ---------- */

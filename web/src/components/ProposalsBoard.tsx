@@ -569,8 +569,6 @@ export default function ProposalsBoard(props: Props) {
         )}
       </div>
 
-      <p className="funil-swipe-hint">← deslize pro lado pra ver as outras etapas →</p>
-
       <div className="funil-grid">
         {STAGES.map((stage) => {
           const items = sortDeals(

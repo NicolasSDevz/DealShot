@@ -82,15 +82,6 @@
   max-width: 360px;
 }
 
-/* Só aparece no celular (vira display:block dentro do media query de 860px) -- no desktop as 4
-   colunas já ficam lado a lado, não tem nada pra "deslizar". */
-.funil-swipe-hint {
-  display: none;
-  font-size: 12px;
-  color: var(--n-500);
-  margin: 0 0 10px;
-}
-
 .funil-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
@@ -1573,34 +1564,20 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  /* No celular, empilhar as 4 colunas inteiras uma embaixo da outra obrigava a rolar muito pra
-     chegar em "Fechado"/"Perdido", e cada coluna ainda tinha scroll interno próprio (rolagem
-     "presa" ao tocar dentro de um card). Em vez disso, vira um carrossel horizontal com scroll-snap
-     -- desliza pro lado pra trocar de etapa, como no Trello mobile. Coluna ocupa 100% da tela (não
-     87%): deixar uma fatia da próxima coluna à mostra parecia bug -- pedaços de cards cortados e
-     sobrepostos -- em vez de dar a entender "arraste pro lado". O aviso de texto acima resolve
-     isso sem ambiguidade. */
+  /* No celular, cada coluna empilhada de cima pra baixo (não lado a lado, não em carrossel) --
+     e cada coluna some do próprio scroll interno (max-height/overflow-y do desktop), porque
+     rolagem "presa" dentro de uma coluna curta, dentro da rolagem da página inteira, é confusa
+     no toque. É só rolar a página normalmente e ir passando pelas etapas em sequência. */
   .funil-grid {
     display: flex;
+    flex-direction: column;
     grid-template-columns: unset;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-left: 4px;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 6px;
-  }
-
-  .funil-col {
-    flex: 0 0 100%;
-    scroll-snap-align: start;
+    overflow-x: visible;
   }
 
   .funil-col-body {
-    max-height: min(60vh, 520px);
-  }
-
-  .funil-swipe-hint {
-    display: block;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .account-card {
