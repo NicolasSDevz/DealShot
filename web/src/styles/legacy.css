@@ -140,6 +140,35 @@ input, select {
   color: #FFFFFF;
 }
 
+/* Escondida por padrão (desktop usa .tabnav-desktop lá em cima) -- vira display:flex só no
+   media query de celular, onde substitui o menu de abas do topo. */
+.bottom-tabbar {
+  display: none;
+}
+
+.bottom-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--n-500);
+  transition: color 0.15s;
+}
+
+.bottom-tab .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.bottom-tab.active {
+  color: var(--amber-500);
+}
+
 .nav-area {
   display: flex;
   align-items: center;
@@ -181,12 +210,34 @@ input, select {
 @media (max-width: 640px) {
   .topbar { padding: 12px 16px; }
   .main { padding: 16px; }
-  /* 4 abas + botão de tema não cabem numa linha só no celular -- em vez de deixar o botão de
-     tema "sobrar" sozinho numa linha, ele fica ao lado das abas (que passam a ocupar a largura
-     toda, num grid 2x2 previsível) e as duas linhas ficam com a mesma largura. */
+  /* Espaço extra embaixo só onde a barra fixa existe de verdade (painel do cliente) -- o
+     seletor de irmão (~) não pega o .main do admin, que não tem .bottom-tabbar no DOM. */
+  .bottom-tabbar ~ .main {
+    padding-bottom: calc(16px + 70px + env(safe-area-inset-bottom, 0px));
+  }
+  /* No admin (que não tem barra fixa embaixo, só o painel do cliente tem) o menu de abas continua
+     no topo -- não cabendo numa linha só no celular, vira um grid 2x2 previsível em vez de deixar
+     o botão de tema sobrando sozinho numa linha. */
   .nav-area { width: 100%; align-items: flex-start; }
   .tabnav { flex: 1 1 auto; width: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .tabbtn { justify-content: center; padding: 8px 6px; font-size: 13px; }
+
+  /* No painel do cliente, o menu de abas do topo vira a barra fixa embaixo (.bottom-tabbar) --
+     mais parecido com app de celular de verdade, sempre à mão sem precisar rolar pra cima. */
+  .tabnav-desktop { display: none; }
+
+  .bottom-tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    background: var(--n-900);
+    border-top: 1px solid var(--n-800);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
 }
 
 /* ---------- calc tab ---------- */

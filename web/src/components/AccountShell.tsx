@@ -26,7 +26,7 @@ import Modal from "./Modal";
 import UsageBadge from "./UsageBadge";
 import LimitModal from "./LimitModal";
 import UpgradeModal from "./UpgradeModal";
-import { UserIcon, LogoutIcon, RocketIcon } from "./Icons";
+import { UserIcon, LogoutIcon, RocketIcon, CalculatorIcon, KanbanIcon, ChartIcon, CheckCircleIcon } from "./Icons";
 
 type Tab = "calc" | "funil" | "painel" | "checklist";
 
@@ -268,7 +268,7 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
           </div>
         </div>
         <div className="nav-area">
-          <nav className="tabnav" aria-label="Seções do painel">
+          <nav className="tabnav tabnav-desktop" aria-label="Seções do painel">
             <button className={`tabbtn${tab === "calc" ? " active" : ""}`} aria-current={tab === "calc" ? "page" : undefined} onClick={() => setTab("calc")}>
               Calculadora
             </button>
@@ -301,6 +301,28 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
           )}
         </div>
       </header>
+
+      {/* Só aparece no celular (a barra de abas lá em cima vira barra fixa embaixo, com ícone --
+          igual app de celular de verdade). No desktop fica escondida via CSS, o .tabnav-desktop
+          lá em cima continua sendo o menu. */}
+      <nav className="bottom-tabbar" aria-label="Seções do painel">
+        <button className={`bottom-tab${tab === "calc" ? " active" : ""}`} aria-current={tab === "calc" ? "page" : undefined} onClick={() => setTab("calc")}>
+          <CalculatorIcon />
+          <span>Calculadora</span>
+        </button>
+        <button className={`bottom-tab${tab === "funil" ? " active" : ""}`} aria-current={tab === "funil" ? "page" : undefined} onClick={() => setTab("funil")}>
+          <KanbanIcon />
+          <span>Propostas</span>
+        </button>
+        <button className={`bottom-tab${tab === "painel" ? " active" : ""}`} aria-current={tab === "painel" ? "page" : undefined} onClick={() => setTab("painel")}>
+          <ChartIcon />
+          <span>Resultados</span>
+        </button>
+        <button className={`bottom-tab${tab === "checklist" ? " active" : ""}`} aria-current={tab === "checklist" ? "page" : undefined} onClick={() => setTab("checklist")}>
+          <CheckCircleIcon />
+          <span>Checklist</span>
+        </button>
+      </nav>
 
       {showCompanyEditor && companyForDisplay && (
         <Modal onClose={() => setShowCompanyEditor(false)}>
