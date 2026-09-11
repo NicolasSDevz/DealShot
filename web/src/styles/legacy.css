@@ -89,7 +89,9 @@ input, select {
 /* ---------- layout ---------- */
 
 .topbar {
-  background: var(--n-900);
+  /* Leve gradiente com a cor de destaque da marca, em vez de uma cor chapada -- usa as
+     variáveis do tema (funciona igual no claro e no escuro), sem imagem nenhuma. */
+  background: linear-gradient(120deg, var(--n-900) 0%, var(--n-900) 55%, color-mix(in srgb, var(--amber-400) 10%, var(--n-900)) 100%);
   border-bottom: 1px solid var(--n-800);
   box-shadow: var(--shadow-card);
   padding: 14px 24px;
@@ -212,12 +214,11 @@ input, select {
 .auth-panel {
   width: 100%;
   max-width: 380px;
-  /* A faixa ficava atrás da tela inteira antes (::before em .auth-screen) -- num formulário
-     comprido (ex: cadastro, com CPF/CNPJ, descrição, LGPD etc.) o card enche a tela toda no
-     celular e não sobra espaço nenhum ao redor pra ela aparecer. Agora é uma faixa de verdade
-     dentro do próprio card, sempre visível, do mesmo tamanho em qualquer formulário. Cor de
-     fundo fixa (não muda com o tema) porque assim não precisa inverter a imagem pra continuar
-     legível -- é só um banner, não a tela inteira. */
+  /* Faixa dentro do próprio card (em vez de atrás da tela inteira) -- num formulário comprido
+     (ex: cadastro, com CPF/CNPJ, descrição, LGPD etc.) o card enche a tela toda no celular e não
+     sobrava espaço nenhum ao redor pra uma imagem de fundo aparecer. Gradiente em vez de foto:
+     nasce sempre nítido (não depende de recorte de nenhuma imagem) e usa as próprias cores da
+     marca, então também não precisa inverter nada pro tema claro/escuro. */
   overflow: hidden;
   border-radius: 14px;
 }
@@ -227,10 +228,10 @@ input, select {
   display: block;
   margin: -22px -22px 18px;
   height: 110px;
-  background-color: #0b1220;
-  background-image: url("../assets/auth-bg.png");
-  background-size: cover;
-  background-position: center 65%;
+  background:
+    radial-gradient(circle at 18% 25%, rgba(255, 255, 255, 0.16), transparent 55%),
+    radial-gradient(circle at 82% 78%, var(--amber-400), transparent 60%),
+    linear-gradient(135deg, #0b1220 0%, #16234a 55%, #1d2b56 100%);
 }
 
 @media (max-width: 640px) {
