@@ -202,39 +202,42 @@ input, select {
 }
 
 .auth-screen {
-  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  overflow: hidden;
-}
-
-/* Ilustração de fundo (skyline de obra + guindaste) atrás do formulário -- um PNG só, desenhado
-   em tons claros sobre fundo transparente. No tema escuro aparece direto (linhas claras sobre
-   fundo quase preto); no tema claro a gente inverte as cores com filter (linhas escuras sobre
-   fundo quase branco), em vez de gerar dois arquivos. Fica num ::before em vez de direto no
-   .auth-screen porque o filter: invert() do tema claro não pode pegar o formulário também. */
-.auth-screen::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("../assets/auth-bg.png");
-  background-size: cover;
-  background-position: center bottom;
-  pointer-events: none;
-}
-
-:root:not([data-theme="dark"]) .auth-screen::before {
-  filter: invert(1);
 }
 
 .auth-panel {
-  position: relative;
-  z-index: 1;
   width: 100%;
   max-width: 380px;
+  /* A faixa ficava atrás da tela inteira antes (::before em .auth-screen) -- num formulário
+     comprido (ex: cadastro, com CPF/CNPJ, descrição, LGPD etc.) o card enche a tela toda no
+     celular e não sobra espaço nenhum ao redor pra ela aparecer. Agora é uma faixa de verdade
+     dentro do próprio card, sempre visível, do mesmo tamanho em qualquer formulário. Cor de
+     fundo fixa (não muda com o tema) porque assim não precisa inverter a imagem pra continuar
+     legível -- é só um banner, não a tela inteira. */
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.auth-panel::before {
+  content: "";
+  display: block;
+  margin: -22px -22px 18px;
+  height: 110px;
+  background-color: #0b1220;
+  background-image: url("../assets/auth-bg.png");
+  background-size: cover;
+  background-position: center 65%;
+}
+
+@media (max-width: 640px) {
+  .auth-panel::before {
+    margin: -16px -16px 16px;
+    height: 84px;
+  }
 }
 
 @media (max-width: 640px) {
