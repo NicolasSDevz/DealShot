@@ -20,6 +20,7 @@ import {
 } from "../lib/calc";
 import { downloadClientPdf, downloadInternalPdf } from "../lib/pdf";
 import PresentationView from "./PresentationView";
+import QuoteSummary from "./QuoteSummary";
 import type { CompanyProfile } from "../lib/db";
 import { useDialog } from "../context/useDialog";
 import {
@@ -92,13 +93,16 @@ function AffixInput({ prefix, suffix, className, onFocus, ...rest }: AffixInputP
 function StepHeader({ index }: { index: number }) {
   const s = STEPS[index];
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-      <div className="cost-group-icon" style={{ background: s.color, marginBottom: 0 }}>
+    <div className="step-heading">
+      <div className="step-heading-icon" style={{ background: s.color }}>
         {s.icon}
       </div>
-      <p className="eyebrow" style={{ margin: 0 }}>
-        {s.label}
-      </p>
+      <div>
+        <span className="step-kicker">
+          Etapa {index + 1} de {STEPS.length}
+        </span>
+        <h2 className="step-title">{s.label}</h2>
+      </div>
     </div>
   );
 }
@@ -179,7 +183,7 @@ export default function QuoteForm({ initialDeal, company, obraNumero, onSave, on
     // que dá prejuízo.
     if (calc.margemAbaixoDoSaudavel) {
       const ok = await confirmDialog(
-        `Esse preço deixa a margem em ${(calc.margemReal * 100).toFixed(1)}% — abaixo dos ${(MARGEM_MINIMA_SAUDAVEL * 100).toFixed(0)}% recomendados pra não trabalhar no prejuízo. Quer salvar assim mesmo?`,
+        `Esse preço deixa a margem em ${(calc.margemReal * 100).toFixed(1).replace(".", ",")}% — abaixo dos ${(MARGEM_MINIMA_SAUDAVEL * 100).toFixed(0)}% recomendados pra não trabalhar no prejuízo. Quer salvar assim mesmo?`,
         { title: "Margem baixa", confirmLabel: "Salvar assim mesmo", cancelLabel: "Voltar e ajustar", tone: "danger" },
       );
       if (!ok) {
@@ -217,24 +221,27 @@ export default function QuoteForm({ initialDeal, company, obraNumero, onSave, on
   return (
     <>
       <div className="quote-grid">
-      <div className="panel">
-        <h2 className="panel-title">{isEditing ? "Editar orçamento" : "Novo orçamento"}</h2>
-
-        <div className="wizard-steps" role="tablist" aria-label="Etapas do orçamento">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.label}
-              type="button"
-              role="tab"
-              aria-selected={step === i}
-              className={`wizard-step${step === i ? " active" : ""}${i < step ? " done" : ""}`}
-              onClick={() => setStep(i)}
-            >
-              <span className="wizard-step-num">{i < step ? "✓" : i + 1}</span>
-              <span className="wizard-step-label">{s.label}</span>
-            </button>
-          ))}
-        </div>
+      <div className="panel quote-panel">
+        <nav className="stepper" aria-label="Etapas do orçamento">
+          <div className="stepper-track" aria-hidden="true">
+            <div className="stepper-fill" style={{ width: `${(step / lastStep) * 100}%` }} />
+          </div>
+          <ol className="stepper-list">
+            {STEPS.map((s, i) => (
+              <li key={s.label}>
+                <button
+                  type="button"
+                  aria-current={step === i ? "step" : undefined}
+                  className={`stepper-item${step === i ? " active" : ""}${i < step ? " done" : ""}`}
+                  onClick={() => setStep(i)}
+                >
+                  <span className="stepper-dot">{i < step ? "✓" : i + 1}</span>
+                  <span className="stepper-label">{s.label}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
 
         {step === 0 && (
           <>
@@ -244,7 +251,7 @@ export default function QuoteForm({ initialDeal, company, obraNumero, onSave, on
               <div className="cost-group">
                 <p className="cost-group-title">Cliente</p>
                 <div className="cost-group-fields">
-                  {field("Cliente", <input className="input" value={deal.clientName} title={deal.clientName} onChange={(e) => set("clientName", e.target.value)} required />, "clientName", { wide: true })}
+                  {field("Nome do cliente", <input className="input" value={deal.clientName} title={deal.clientName} onChange={(e) => set("clientName", e.target.value)} required />, "clientName", { wide: true })}
                   {field(
                     "Tipo de imóvel",
                     <select className="input" value={deal.clientType} onChange={(e) => set("clientType", e.target.value)}>
@@ -697,7 +704,7 @@ export default function QuoteForm({ initialDeal, company, obraNumero, onSave, on
               <div className="margin-warning">
                 <AlertTriangleIcon />
                 <div>
-                  <p className="margin-warning-title">Margem de {(calc.margemReal * 100).toFixed(1)}% — abaixo do recomendado</p>
+                  <p className="margin-warning-title">Margem de {(calc.margemReal * 100).toFixed(1).replace(".", ",")}% — abaixo do recomendado</p>
                   <p>
                     Com esses custos, esse preço deixa menos de {(MARGEM_MINIMA_SAUDAVEL * 100).toFixed(0)}% de margem. Ajuste a margem desejada
                     ou o valor final antes de salvar, ou o app vai pedir uma confirmação extra.
@@ -809,48 +816,7 @@ export default function QuoteForm({ initialDeal, company, obraNumero, onSave, on
         </p>
       </div>
 
-      <div className="panel">
-        <h2 className="panel-title">Resumo do orçamento</h2>
-        <p className="microlabel">Equipe</p>
-        <p>{formatBRL(calc.maoDeObraTotal)}</p>
-        {calc.encargosTotal > 0 && (
-          <>
-            <p className="microlabel">Encargos</p>
-            <p>{formatBRL(calc.encargosTotal)}</p>
-          </>
-        )}
-        {calc.proLaboreTotal > 0 && (
-          <>
-            <p className="microlabel">Seu pró-labore</p>
-            <p>{formatBRL(calc.proLaboreTotal)}</p>
-          </>
-        )}
-        <p className="microlabel">Transporte e alimentação</p>
-        <p>{formatBRL(calc.apoioTotal)}</p>
-        <p className="microlabel">Materiais ({(calc.materialPct * 100).toFixed(0)}%)</p>
-        <p>{formatBRL(calc.materiaisTotal)}</p>
-        {calc.gorduraValor > 0 && (
-          <>
-            <p className="microlabel">Gordura de segurança</p>
-            <p>{formatBRL(calc.gorduraValor)}</p>
-          </>
-        )}
-        <p className="microlabel">Custo operacional total</p>
-        <p>{formatBRL(calc.custosOperacionais)}</p>
-        {calc.impostoTotal > 0 && (
-          <>
-            <p className="microlabel">Imposto sobre a venda</p>
-            <p>{formatBRL(calc.impostoTotal)}</p>
-          </>
-        )}
-        <hr style={{ borderColor: "var(--n-800)" }} />
-        <p className="microlabel">Preço sugerido</p>
-        <p style={{ fontSize: 22, fontWeight: 700, color: "var(--amber-400)" }}>{formatBRL(calc.valorFinal)}</p>
-        <p className={`microlabel${calc.margemAbaixoDoSaudavel ? " margin-summary-low" : ""}`}>
-          Margem real: {(calc.margemReal * 100).toFixed(1)}%{calc.margemAbaixoDoSaudavel ? " ⚠️ abaixo do recomendado" : ""}
-        </p>
-        <p className="microlabel">Custo por m²: {formatBRL(calc.custoPorM2)}</p>
-      </div>
+      <QuoteSummary calc={calc} metragem={num(deal.metragem)} />
       </div>
       {presenting && (
         <PresentationView

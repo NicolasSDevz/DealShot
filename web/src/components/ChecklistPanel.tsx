@@ -120,57 +120,75 @@ export default function ChecklistPanel({ accountId, initial }: Props) {
     }
   }
 
+  const ring = 2 * Math.PI * 52;
+
   return (
-    <div className="panel" style={{ margin: 16, maxWidth: 680 }}>
-      <h2 className="panel-title">Checklist de atendimento</h2>
-      <p className="panel-help" style={{ marginTop: 0 }}>
-        Boas práticas que fazem o cliente sentir que está fazendo um bom negócio antes mesmo de ver o preço. Marque o que já é rotina
-        consolidada na sua empresa — cada item já vem com o porquê.
-      </p>
-
-      <div className="checklist-progress-track" style={{ marginBottom: 6 }}>
-        <div className="checklist-progress-fill" style={{ width: `${pct}%`, background: pct === 100 ? "var(--emerald-400)" : "var(--amber-400)" }} />
-      </div>
-      <p className="microlabel" style={{ marginBottom: 20 }}>
-        {done} de {TOTAL_ITEMS} {saving ? "— salvando..." : ""}
-      </p>
-
-      {CHECKLIST_GROUPS.map((group) => {
-        const groupDone = group.items.filter((i) => items[i.id]).length;
-        return (
-          <div className="cost-group checklist-group" key={group.title} style={{ marginBottom: 16 }}>
-            <div className="cost-group-icon" style={{ background: group.color, marginBottom: 10 }}>
-              {group.icon}
-            </div>
-            <p className="cost-group-title">
-              {group.title}
-              <span className="microlabel" style={{ marginLeft: 8 }}>
-                {groupDone}/{group.items.length}
-              </span>
-            </p>
-            <div className="checklist-items">
-              {group.items.map((item) => {
-                const checked = !!items[item.id];
-                return (
-                  <label key={item.id} className={`checklist-item${checked ? " checked" : ""}`}>
-                    <input type="checkbox" checked={checked} onChange={() => toggle(item.id)} />
-                    <span>
-                      {item.label}
-                      <span className="checklist-item-why">{item.why}</span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-
-      {done === TOTAL_ITEMS && (
-        <p className="microlabel" style={{ marginTop: 4, color: "var(--emerald-400)", fontWeight: 700 }}>
-          🎉 Todos os pontos cobertos — é isso que separa quem só manda preço de quem vende valor.
+    <div className="checklist-layout">
+      <aside className="checklist-score">
+        <div className="checklist-ring" role="img" aria-label={`${done} de ${TOTAL_ITEMS} hábitos na rotina`}>
+          <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" className="checklist-ring-track" />
+            <circle
+              cx="60"
+              cy="60"
+              r="52"
+              className={`checklist-ring-fill${pct === 100 ? " full" : ""}`}
+              strokeDasharray={ring}
+              strokeDashoffset={ring - (ring * pct) / 100}
+            />
+          </svg>
+          <span className="checklist-ring-pct">{pct}%</span>
+        </div>
+        <strong className="checklist-score-title">
+          {done} de {TOTAL_ITEMS} hábitos na rotina
+        </strong>
+        <p className="checklist-score-text">
+          Marque o que já é rotina na sua empresa. São esses detalhes que fazem o cliente sentir que está fazendo um bom negócio antes mesmo
+          de ver o preço.
         </p>
-      )}
+        <span className="checklist-saving" role="status" aria-live="polite">
+          {saving ? "Salvando..." : ""}
+        </span>
+        {done === TOTAL_ITEMS && (
+          <p className="checklist-done">Todos os pontos cobertos. É isso que separa quem só manda preço de quem vende valor.</p>
+        )}
+      </aside>
+
+      <div className="checklist-groups">
+        {CHECKLIST_GROUPS.map((group) => {
+          const groupDone = group.items.filter((i) => items[i.id]).length;
+          return (
+            <section className="checklist-group-card" key={group.title}>
+              <header className="checklist-group-head">
+                <span className="checklist-group-icon" style={{ background: group.color }}>
+                  {group.icon}
+                </span>
+                <h2>{group.title}</h2>
+                <span className="checklist-group-count">
+                  {groupDone}/{group.items.length}
+                </span>
+              </header>
+              <div className="checklist-items">
+                {group.items.map((item) => {
+                  const checked = !!items[item.id];
+                  return (
+                    <label key={item.id} className={`checklist-item${checked ? " checked" : ""}`}>
+                      <input type="checkbox" checked={checked} onChange={() => toggle(item.id)} />
+                      <span className="checklist-box" aria-hidden="true">
+                        ✓
+                      </span>
+                      <span className="checklist-text">
+                        {item.label}
+                        <span className="checklist-item-why">{item.why}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }

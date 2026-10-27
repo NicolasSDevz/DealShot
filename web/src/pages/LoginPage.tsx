@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import AuthLayout from "../components/AuthLayout";
 import { Link } from "react-router-dom";
 import { sendBrandedAuthEmail } from "../lib/db";
 import { useAuth } from "../context/useAuth";
@@ -50,7 +51,7 @@ export default function LoginPage({ adminHint = false }: { adminHint?: boolean }
   }
 
   return (
-    <div className="auth-screen">
+    <AuthLayout>
       <form className="panel auth-panel" onSubmit={handleSubmit}>
         <h2 className="panel-title">{adminHint ? "Entrar como admin" : "Entrar"}</h2>
         {!adminHint && (
@@ -109,6 +110,6 @@ export default function LoginPage({ adminHint = false }: { adminHint?: boolean }
           {resetMsg}
         </p>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

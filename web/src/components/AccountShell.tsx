@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import {
   getAccountStatus,
   listProposals,
@@ -26,9 +26,17 @@ import Modal from "./Modal";
 import UsageBadge from "./UsageBadge";
 import LimitModal from "./LimitModal";
 import UpgradeModal from "./UpgradeModal";
-import { UserIcon, LogoutIcon, RocketIcon, CalculatorIcon, KanbanIcon, ChartIcon, CheckCircleIcon } from "./Icons";
+import { UserIcon, LogoutIcon, RocketIcon, CalculatorIcon, KanbanIcon, ChartIcon, CheckCircleIcon, PlusIcon } from "./Icons";
 
 type Tab = "calc" | "funil" | "painel" | "checklist";
+
+const TAB_HASH: Record<Tab, string> = { calc: "orcamento", funil: "propostas", painel: "resultados", checklist: "checklist" };
+
+function tabFromHash(): Tab {
+  const h = window.location.hash.replace("#", "");
+  const found = (Object.keys(TAB_HASH) as Tab[]).find((t) => TAB_HASH[t] === h);
+  return found || "calc";
+}
 
 // Teste de oferta única (ver SignupPage.tsx): esconde o badge de uso ("X/Y orçamentos") e o
 // botão de assinatura no topo enquanto a grade de planos normal fica de lado. Só mude pra
@@ -47,7 +55,19 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
   const [company, setCompany] = useState<CompanyProfile | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loadErr, setLoadErr] = useState("");
-  const [tab, setTab] = useState<Tab>("calc");
+  const [tab, setTabState] = useState<Tab>(() => tabFromHash());
+  // A aba fica no endereço (#propostas etc.): recarregar a página ou usar o "voltar" do
+  // navegador/celular mantém a pessoa onde estava, em vez de sempre cair na calculadora.
+  function setTab(t: Tab) {
+    setTabState(t);
+    const hash = TAB_HASH[t];
+    if (window.location.hash !== `#${hash}`) window.history.pushState(null, "", `#${hash}`);
+  }
+  useEffect(() => {
+    const onPop = () => setTabState(tabFromHash());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [showCompanyEditor, setShowCompanyEditor] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -242,56 +262,122 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
   const currentPlanLabel = PLANS.find((p) => p.id === planId)?.label || "atual";
   const limitPeriodLabel = planResetsMonthly(planId) ? "neste mês" : "no total do plano Teste";
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const followUpsDue = deals.filter((d) => d.stage === "aguardando" && d.followUpDate && d.followUpDate <= todayStr).length;
+  const displayName = company?.companyName || status.companyName || "Sua empresa";
+  const displayInitial = displayName.trim().charAt(0).toUpperCase() || "D";
+
+  const NAV: { id: Tab; label: string; icon: ReactElement; badge?: number }[] = [
+    { id: "calc", label: "Calculadora", icon: <CalculatorIcon /> },
+    { id: "funil", label: "Propostas", icon: <KanbanIcon />, badge: followUpsDue },
+    { id: "painel", label: "Resultados", icon: <ChartIcon /> },
+    { id: "checklist", label: "Checklist", icon: <CheckCircleIcon /> },
+  ];
+
+  const PAGE_HEAD: Record<Tab, { title: string; sub: string }> = {
+    calc: {
+      title: editingDeal ? "Editar orçamento" : "Novo orçamento",
+      sub: "Preencha as 5 etapas. O preço certo aparece ao lado, na hora.",
+    },
+    funil: { title: "Propostas", sub: "Acompanhe cada orçamento até o fechamento e o recebimento." },
+    painel: { title: "Resultados", sub: "Quanto você vendeu, quanto sobrou e de onde vieram os clientes." },
+    checklist: { title: "Checklist de atendimento", sub: "10 hábitos que fazem o cliente perceber valor e fechar com você." },
+  };
+
+  function startNewQuote() {
+    setEditingDeal(null);
+    setTab("calc");
+  }
+
   return (
-    <div id="app">
+    <div id="app" className="shell">
       <a href="#main-content" className="skip-link">
         Pular para o conteúdo
       </a>
       {asAdmin && (
-        <div style={{ background: "#7c3aed", color: "#fff", textAlign: "center", padding: "8px 12px", fontSize: 13 }}>
+        <div className="admin-view-banner">
           Você está vendo o painel como o cliente <strong>{company?.companyName || status.companyName || status.email}</strong> (modo admin).{" "}
-          <a href="/admin" style={{ color: "#fff", textDecoration: "underline", marginLeft: 8 }}>
-            Voltar ao painel admin
-          </a>
+          <a href="/admin">Voltar ao painel admin</a>
         </div>
       )}
-      <header className="topbar">
-        <div className="brand-area">
-          <div className="logo-container">
-            <img src="/logo.png" alt="Deal Shot" className="company-logo" />
-          </div>
-          <div className="brand-info">
-            <h1 className="brand">
-              Deal <span>Shot</span>
-            </h1>
-            <p className="subtitle">Orçamentos para você!</p>
-          </div>
+
+      <aside className="sidebar" aria-label="Menu principal">
+        <div className="sidebar-brand">
+          <img src="/logo.png" alt="" className="sidebar-logo" />
+          <span className="sidebar-brand-name">
+            Deal <span>Shot</span>
+          </span>
         </div>
-        <div className="nav-area">
-          <nav className="tabnav tabnav-desktop" aria-label="Seções do painel">
-            <button className={`tabbtn${tab === "calc" ? " active" : ""}`} aria-current={tab === "calc" ? "page" : undefined} onClick={() => setTab("calc")}>
-              Calculadora
+
+        <button type="button" className="sidebar-cta" onClick={startNewQuote}>
+          <PlusIcon />
+          Novo orçamento
+        </button>
+
+        <nav className="sidebar-nav" aria-label="Seções do painel">
+          {NAV.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              className={`sidebar-link${tab === n.id ? " active" : ""}`}
+              aria-current={tab === n.id ? "page" : undefined}
+              onClick={() => setTab(n.id)}
+            >
+              {n.icon}
+              <span>{n.label}</span>
+              {!!n.badge && (
+                <span className="sidebar-badge" aria-label={`${n.badge} follow-up(s) para hoje`}>
+                  {n.badge}
+                </span>
+              )}
             </button>
-            <button className={`tabbtn${tab === "funil" ? " active" : ""}`} aria-current={tab === "funil" ? "page" : undefined} onClick={() => setTab("funil")}>
-              Propostas
-            </button>
-            <button className={`tabbtn${tab === "painel" ? " active" : ""}`} aria-current={tab === "painel" ? "page" : undefined} onClick={() => setTab("painel")}>
-              Resultados
-            </button>
-            <button className={`tabbtn${tab === "checklist" ? " active" : ""}`} aria-current={tab === "checklist" ? "page" : undefined} onClick={() => setTab("checklist")}>
-              Checklist
-            </button>
-          </nav>
+          ))}
+        </nav>
+
+        <div className="sidebar-foot">
           {SHOW_PLAN_UI && !asAdmin && (
             <UsageBadge used={usedForLimit} limit={monthlyLimit} periodLabel={limitPeriodLabel} onClick={() => setShowUpgradeModal(true)} />
           )}
+          <button type="button" className="sidebar-account" onClick={() => setShowCompanyEditor(true)} title="Perfil da empresa">
+            {companyForDisplay?.logoUrl ? (
+              <img src={companyForDisplay.logoUrl} alt="" className="sidebar-account-avatar img" />
+            ) : (
+              <span className="sidebar-account-avatar" aria-hidden="true">
+                {displayInitial}
+              </span>
+            )}
+            <span className="sidebar-account-text">
+              <strong>{displayName}</strong>
+              <small>Perfil da empresa</small>
+            </span>
+          </button>
+          <div className="sidebar-tools">
+            <ThemeToggle />
+            {SHOW_PLAN_UI && !asAdmin && (
+              <button className="theme-toggle" title="Assinatura" aria-label="Melhorar assinatura" onClick={() => setShowUpgradeModal(true)}>
+                <RocketIcon />
+              </button>
+            )}
+            {!asAdmin && (
+              <button className="theme-toggle" title="Sair" aria-label="Sair" onClick={() => logout()}>
+                <LogoutIcon />
+              </button>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* Celular: barra de cima enxuta + menu fixo embaixo (no lugar do menu lateral). */}
+      <header className="mobile-topbar">
+        <div className="sidebar-brand">
+          <img src="/logo.png" alt="" className="sidebar-logo" />
+          <span className="sidebar-brand-name">
+            Deal <span>Shot</span>
+          </span>
+        </div>
+        <div className="mobile-topbar-tools">
           <ThemeToggle />
-          {SHOW_PLAN_UI && !asAdmin && (
-            <button className="theme-toggle" title="Assinatura" aria-label="Melhorar assinatura" onClick={() => setShowUpgradeModal(true)}>
-              <RocketIcon />
-            </button>
-          )}
-          <button className="theme-toggle" title="Perfil" aria-label="Perfil" onClick={() => setShowCompanyEditor(true)}>
+          <button className="theme-toggle" title="Perfil" aria-label="Perfil da empresa" onClick={() => setShowCompanyEditor(true)}>
             <UserIcon />
           </button>
           {!asAdmin && (
@@ -302,26 +388,22 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
         </div>
       </header>
 
-      {/* Só aparece no celular (a barra de abas lá em cima vira barra fixa embaixo, com ícone --
-          igual app de celular de verdade). No desktop fica escondida via CSS, o .tabnav-desktop
-          lá em cima continua sendo o menu. */}
       <nav className="bottom-tabbar" aria-label="Seções do painel">
-        <button className={`bottom-tab${tab === "calc" ? " active" : ""}`} aria-current={tab === "calc" ? "page" : undefined} onClick={() => setTab("calc")}>
-          <CalculatorIcon />
-          <span>Calculadora</span>
-        </button>
-        <button className={`bottom-tab${tab === "funil" ? " active" : ""}`} aria-current={tab === "funil" ? "page" : undefined} onClick={() => setTab("funil")}>
-          <KanbanIcon />
-          <span>Propostas</span>
-        </button>
-        <button className={`bottom-tab${tab === "painel" ? " active" : ""}`} aria-current={tab === "painel" ? "page" : undefined} onClick={() => setTab("painel")}>
-          <ChartIcon />
-          <span>Resultados</span>
-        </button>
-        <button className={`bottom-tab${tab === "checklist" ? " active" : ""}`} aria-current={tab === "checklist" ? "page" : undefined} onClick={() => setTab("checklist")}>
-          <CheckCircleIcon />
-          <span>Checklist</span>
-        </button>
+        {NAV.map((n) => (
+          <button
+            key={n.id}
+            type="button"
+            className={`bottom-tab${tab === n.id ? " active" : ""}`}
+            aria-current={tab === n.id ? "page" : undefined}
+            onClick={() => setTab(n.id)}
+          >
+            <span className="bottom-tab-icon">
+              {n.icon}
+              {!!n.badge && <span className="bottom-tab-badge">{n.badge}</span>}
+            </span>
+            <span>{n.label}</span>
+          </button>
+        ))}
       </nav>
 
       {showCompanyEditor && companyForDisplay && (
@@ -364,14 +446,22 @@ export default function AccountShell({ accountId, asAdmin = false }: { accountId
       )}
 
       <main className="main" id="main-content">
+        <div className="page-head">
+          <div>
+            <h1 className="page-title">{PAGE_HEAD[tab].title}</h1>
+            <p className="page-sub">{PAGE_HEAD[tab].sub}</p>
+          </div>
+          {tab !== "calc" && (
+            <button type="button" className="save-btn page-head-cta" onClick={startNewQuote}>
+              <PlusIcon />
+              Novo orçamento
+            </button>
+          )}
+        </div>
         {tab === "calc" && companyIncomplete && (
           <div className="hint-banner" role="status">
             <span>Coloque os dados da sua empresa pra aparecer no PDF dos orçamentos.</span>
-            <button
-              type="button"
-              onClick={() => setShowCompanyEditor(true)}
-              style={{ fontSize: 12, whiteSpace: "nowrap", border: "1px solid var(--amber-500)", borderRadius: 6, padding: "4px 10px" }}
-            >
+            <button type="button" className="hint-banner-btn" onClick={() => setShowCompanyEditor(true)}>
               Completar perfil
             </button>
           </div>

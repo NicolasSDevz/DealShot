@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatBRL } from "../lib/calc";
 
 export function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -10,19 +11,6 @@ export function Tile({ label, value, hint }: { label: string; value: string; hin
           {hint}
         </p>
       )}
-    </div>
-  );
-}
-
-export function BarRow({ label, metric, max, color, display }: { label: string; metric: number; max: number; color: string; display: string }) {
-  const pct = max > 0 ? Math.max((metric / max) * 100, metric > 0 ? 3 : 0) : 0;
-  return (
-    <div className="funnel-row">
-      <span className="funnel-row-label">{label}</span>
-      <div className="funnel-row-track">
-        <div className="funnel-row-fill" style={{ width: `${pct}%`, background: color }} />
-      </div>
-      <span className="funnel-row-value">{display}</span>
     </div>
   );
 }
@@ -113,5 +101,82 @@ export function LineChart({ points }: { points: { label: string; value: number }
         </g>
       ))}
     </svg>
+  );
+}
+
+export function BarRow({ label, metric, max, color, display }: { label: string; metric: number; max: number; color: string; display: string }) {
+  const pct = max > 0 ? Math.max((metric / max) * 100, metric > 0 ? 3 : 0) : 0;
+  return (
+    <div className="funnel-row">
+      <span className="funnel-row-label" title={label}>
+        {label}
+      </span>
+      <div className="funnel-row-track">
+        <div className="funnel-row-fill" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className="funnel-row-value">{display}</span>
+    </div>
+  );
+}
+
+export function KpiCard({
+  label,
+  value,
+  hint,
+  icon,
+  tone = "default",
+  progress,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  icon?: ReactNode;
+  tone?: "default" | "brand" | "good" | "warn";
+  progress?: number;
+}) {
+  return (
+    <div className={`kpi-card ${tone}`}>
+      <div className="kpi-head">
+        {icon && <span className="kpi-icon">{icon}</span>}
+        <span className="kpi-label">{label}</span>
+      </div>
+      <strong className="kpi-value">{value}</strong>
+      {progress != null && (
+        <div className="kpi-progress" aria-hidden="true">
+          <div style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+        </div>
+      )}
+      {hint && <span className="kpi-hint">{hint}</span>}
+    </div>
+  );
+}
+
+function compactBRL(v: number) {
+  if (v >= 1000) return `${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+  return Math.round(v).toLocaleString("pt-BR");
+}
+
+// Faturamento por mês: colunas (comparar meses lado a lado é mais fácil que ler uma linha).
+export function ColumnChart({ points }: { points: { label: string; value: number }[] }) {
+  const max = Math.max(1, ...points.map((p) => p.value));
+  const last = points.length - 1;
+  return (
+    <div className="column-chart" role="img" aria-label={points.map((p) => `${p.label}: ${formatBRL(p.value)}`).join("; ")}>
+      {points.map((p, i) => (
+        <div className="column-chart-col" key={p.label}>
+          <span className="column-chart-value">
+            <span className="cc-long">{p.value > 0 ? formatBRL(p.value).replace(",00", "") : "—"}</span>
+            <span className="cc-short">{p.value > 0 ? compactBRL(p.value) : "—"}</span>
+          </span>
+          <div className="column-chart-track">
+            <div
+              className={`column-chart-bar${i === last ? " current" : ""}`}
+              style={{ height: `${Math.max(p.value > 0 ? 4 : 0, (p.value / max) * 100)}%` }}
+            />
+          </div>
+          <span className="column-chart-label">{p.label}</span>
+        </div>
+      ))}
+    </div>
   );
 }

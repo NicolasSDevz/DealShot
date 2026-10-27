@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import AuthLayout from "../components/AuthLayout";
 import { Link, useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
@@ -86,7 +87,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="auth-screen">
+    <AuthLayout>
       <form className="panel auth-panel signup-panel" onSubmit={handleSubmit}>
         <h2 className="panel-title">Criar conta</h2>
         <p className="panel-help" style={{ marginTop: 0 }}>
@@ -180,6 +181,6 @@ export default function SignupPage() {
           Já tem conta? <Link to="/">Entrar</Link>
         </p>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

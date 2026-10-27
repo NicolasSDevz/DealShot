@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { formatBRL, num, isThisMonth, calcDeal, roundCents, STAGES, type Deal } from "../lib/calc";
-import { Tile, BarRow, CircleChart, LineChart } from "./charts";
+import { BarRow, KpiCard, ColumnChart } from "./charts";
+import { TrendingUpIcon, WalletIcon, BanknoteIcon, SendIcon } from "./Icons";
 
 const CAT_COLORS = ["var(--cat-1)", "var(--cat-2)", "var(--cat-3)", "var(--cat-4)", "var(--cat-5)", "var(--cat-6)"];
 
@@ -93,94 +94,127 @@ export default function SalesOverview({ deals }: { deals: Deal[] }) {
     return months;
   }, [deals]);
 
+  const fmtPct = (v: number) => `${v.toFixed(0)}%`;
+  const margemSaldo = valorVendido > 0 ? (saldo / valorVendido) * 100 : 0;
+  const maxLead = Math.max(1, ...porLeadSource.map((l) => l.value));
+  const maxForma = Math.max(1, ...porFormaPagamento.map((f) => f.value));
+
   return (
-    <div>
-      <div className="panel-header">
-        <h2 className="panel-title" style={{ margin: 0 }}>
-          Resultados
-        </h2>
-        <div className="stage-pills" style={{ margin: 0 }}>
-          <button type="button" className={`stage-pill${period === "mes" ? " active" : ""}`} onClick={() => setPeriod("mes")}>
+    <div className="results">
+      <div className="results-toolbar">
+        <div className="segmented" role="group" aria-label="Período">
+          <button type="button" aria-pressed={period === "mes"} className={period === "mes" ? "active" : ""} onClick={() => setPeriod("mes")}>
             Este mês
           </button>
-          <button type="button" className={`stage-pill${period === "tudo" ? " active" : ""}`} onClick={() => setPeriod("tudo")}>
+          <button type="button" aria-pressed={period === "tudo"} className={period === "tudo" ? "active" : ""} onClick={() => setPeriod("tudo")}>
             Todo o período
           </button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
-        <Tile label="Orçamentos" value={String(base.length)} />
-        <Tile label="Propostas enviadas" value={String(enviadas.length)} />
-        <Tile label="Fechados" value={String(fechados.length)} />
-        <Tile label="Perdidos" value={String(perdidos.length)} />
-        <Tile label="Taxa de conversão" value={`${taxaConversao.toFixed(0)}%`} hint="fechados ÷ (fechados + perdidos)" />
-        <Tile label="Venda média" value={formatBRL(ticketMedio)} hint="média só dos fechados" />
+      <div className="kpi-grid">
+        <KpiCard
+          tone="brand"
+          icon={<TrendingUpIcon />}
+          label="Faturado"
+          value={formatBRL(valorVendido)}
+          hint={`${fechados.length} ${fechados.length === 1 ? "serviço fechado" : "serviços fechados"}`}
+        />
+        <KpiCard
+          tone="good"
+          icon={<WalletIcon />}
+          label="Lucro (saldo)"
+          value={formatBRL(saldo)}
+          hint={valorVendido > 0 ? `${fmtPct(margemSaldo)} do faturado. Custos: ${formatBRL(custosOperacionais)}` : "Faturado menos os custos"}
+        />
+        <KpiCard
+          tone="warn"
+          icon={<BanknoteIcon />}
+          label="A receber"
+          value={formatBRL(valorNaoPago)}
+          progress={fechados.length ? pagoPct : undefined}
+          hint={fechados.length ? `${formatBRL(valorPago)} já recebido (${fmtPct(pagoPct)})` : "Nenhum fechado ainda"}
+        />
+        <KpiCard
+          icon={<SendIcon />}
+          label="Em negociação"
+          value={formatBRL(valorEmAberto)}
+          hint={`${aguardando.length} ${aguardando.length === 1 ? "proposta aguardando" : "propostas aguardando"} resposta`}
+        />
       </div>
 
-      <div className="chart-grid" style={{ marginBottom: 16 }}>
-        <div className="chart-card">
-          <p className="chart-title">Funil de vendas</p>
-          <div className="funnel" style={{ marginBottom: 14 }}>
+      <div className="stat-strip">
+        <div>
+          <span>Orçamentos</span>
+          <strong>{base.length}</strong>
+        </div>
+        <div>
+          <span>Enviados</span>
+          <strong>{enviadas.length}</strong>
+        </div>
+        <div>
+          <span>Fechados</span>
+          <strong>{fechados.length}</strong>
+        </div>
+        <div>
+          <span>Perdidos</span>
+          <strong>{perdidos.length}</strong>
+          {valorPerdido > 0 && <small>{formatBRL(valorPerdido)}</small>}
+        </div>
+        <div>
+          <span>Taxa de conversão</span>
+          <strong>{fmtPct(taxaConversao)}</strong>
+          <small>fechados ÷ decididos</small>
+        </div>
+        <div>
+          <span>Venda média</span>
+          <strong>{formatBRL(ticketMedio)}</strong>
+        </div>
+      </div>
+
+      <div className="results-grid">
+        <section className="chart-card span-2">
+          <h2 className="chart-title">Faturamento nos últimos 6 meses</h2>
+          <ColumnChart points={faturamentoMensal} />
+        </section>
+
+        <section className="chart-card">
+          <h2 className="chart-title">Funil de vendas</h2>
+          <div className="funnel">
             {porStage.map((s) => (
               <BarRow key={s.id} label={s.label} metric={s.count} max={maxStageCount} color={STAGE_COLORS[s.id]} display={`${s.count} · ${formatBRL(s.value)}`} />
             ))}
           </div>
-          <CircleChart hole={0.55} data={porStage.map((s) => ({ label: s.label, value: s.count, color: STAGE_COLORS[s.id] }))} />
-        </div>
+        </section>
 
-        <div className="chart-card">
-          <p className="chart-title">Faturamento</p>
-          <div style={{ display: "grid", gap: 10 }}>
-            <Tile label="Faturado (fechados)" value={formatBRL(valorVendido)} />
-            <Tile label="Aguardando resposta" value={formatBRL(valorEmAberto)} />
-            <Tile label="Perdido" value={formatBRL(valorPerdido)} />
-          </div>
-        </div>
-
-        <div className="chart-card">
-          <p className="chart-title">Custos e saldo dos fechados</p>
-          <div style={{ display: "grid", gap: 10 }}>
-            <Tile label="Custos operacionais" value={formatBRL(custosOperacionais)} hint="soma dos custos calculados de cada fechado" />
-            <Tile label="Saldo (lucro)" value={formatBRL(saldo)} hint="faturado − custos operacionais" />
-          </div>
-        </div>
-      </div>
-
-      <div className="chart-grid">
-        <div className="chart-card">
-          <p className="chart-title">Pago vs. a receber (fechados)</p>
-          {fechados.length === 0 ? (
-            <p className="chart-empty">Nenhum fechado ainda.</p>
+        <section className="chart-card">
+          <h2 className="chart-title">De onde vêm os clientes</h2>
+          {porLeadSource.length === 0 ? (
+            <p className="chart-empty">Sem orçamentos no período.</p>
           ) : (
-            <>
-              <div className="split-bar">
-                <div className="split-bar-seg" style={{ width: `${pagoPct}%`, background: "var(--emerald-400)" }} />
-                <div className="split-bar-seg" style={{ width: `${100 - pagoPct}%`, background: "var(--n-700)" }} />
-              </div>
-              <div className="legend">
-                <span className="legend-item">
-                  <span className="legend-swatch" style={{ background: "var(--emerald-400)" }} /> Pago — {formatBRL(valorPago)}
-                </span>
-                <span className="legend-item">
-                  <span className="legend-swatch" style={{ background: "var(--n-700)" }} /> A receber — {formatBRL(valorNaoPago)}
-                </span>
-              </div>
-            </>
+            <div className="funnel">
+              {porLeadSource.map((l) => (
+                <BarRow key={l.label} label={l.label} metric={l.value} max={maxLead} color="var(--cat-1)" display={`${l.value} (${fmtPct((l.value / base.length) * 100)})`} />
+              ))}
+            </div>
           )}
-        </div>
+        </section>
 
-        <div className="chart-card">
-          <p className="chart-title">Formas de pagamento (fechados)</p>
+        <section className="chart-card">
+          <h2 className="chart-title">Formas de pagamento</h2>
           {porFormaPagamento.length === 0 ? (
             <p className="chart-empty">Nenhum fechado ainda.</p>
           ) : (
-            <CircleChart data={porFormaPagamento} formatValue={formatBRL} />
+            <div className="funnel">
+              {porFormaPagamento.map((f) => (
+                <BarRow key={f.label} label={f.label} metric={f.value} max={maxForma} color="var(--cat-3)" display={formatBRL(f.value)} />
+              ))}
+            </div>
           )}
-        </div>
+        </section>
 
-        <div className="chart-card">
-          <p className="chart-title">Vendas por cliente (fechados)</p>
+        <section className="chart-card">
+          <h2 className="chart-title">Maiores clientes</h2>
           {porCliente.length === 0 ? (
             <p className="chart-empty">Nenhuma venda fechada ainda.</p>
           ) : (
@@ -190,19 +224,8 @@ export default function SalesOverview({ deals }: { deals: Deal[] }) {
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </section>
 
-      <div className="chart-grid" style={{ marginTop: 16 }}>
-        <div className="chart-card">
-          <p className="chart-title">Origem dos leads</p>
-          <CircleChart data={porLeadSource} />
-        </div>
-
-        <div className="chart-card" style={{ gridColumn: "span 2" }}>
-          <p className="chart-title">Faturamento nos últimos 6 meses</p>
-          <LineChart points={faturamentoMensal} />
-        </div>
       </div>
     </div>
   );

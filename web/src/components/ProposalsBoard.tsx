@@ -17,6 +17,14 @@ import {
   BarcodeIcon,
   BankIcon,
   LayersIcon,
+  ChevronDownIcon,
+  PresentationIcon,
+  MessageIcon,
+  MailIcon,
+  DownloadIcon,
+  TrashIcon,
+  BellIcon,
+  SearchIcon,
 } from "./Icons";
 
 // Formas de pagamento recebidas à vista/na hora -- ao escolher uma delas, já preenchemos
@@ -172,7 +180,6 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
   const sentDays = daysSince(deal.sentAt);
   const cadenceStep = deal.stage === "aguardando" ? cadenceStepFor(sentDays) : null;
   const nextStep = deal.stage === "aguardando" ? nextCadenceStep(sentDays) : null;
-  const stageLabel = STAGES.find((s) => s.id === deal.stage)?.label || deal.stage;
   const placeLabel = deal.obraNome || deal.endereco || "";
 
   // Avança a data de follow-up pra próxima etapa da cadência (dia 2 -> dia 4 -> dia 5), contada a
@@ -248,15 +255,23 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
           <span className="deal-avatar" aria-hidden="true">
             {initial}
           </span>
-          <button type="button" className="deal-name" title={deal.clientName || "Sem nome"} onClick={() => onEdit(deal)}>
-            {deal.clientName || "Sem nome"}
-          </button>
+          <div className="deal-name-col">
+            <button type="button" className="deal-name" title={`Editar orçamento de ${deal.clientName || "Sem nome"}`} onClick={() => onEdit(deal)}>
+              {deal.clientName || "Sem nome"}
+            </button>
+            {placeLabel && <span className="deal-place">{placeLabel}</span>}
+          </div>
         </div>
         <span className="deal-value">{formatBRL(deal.valorFinal)}</span>
       </div>
-      {deal.stage === "aguardando" && sentDays !== null && <p className="deal-meta">Enviada há {sentDays} dia(s)</p>}
-      {cadenceStep && <p className="deal-meta cadence-hint">📅 {cadenceStep.hint}</p>}
-      {placeLabel && <p className="deal-meta">{placeLabel}</p>}
+      {(deal.stage === "aguardando" && sentDays !== null) || cadenceStep ? (
+        <div className="deal-tags">
+          {deal.stage === "aguardando" && sentDays !== null && (
+            <span className="deal-tag">{sentDays === 0 ? "Enviada hoje" : `Enviada há ${sentDays} ${sentDays > 1 ? "dias" : "dia"}`}</span>
+          )}
+          {cadenceStep && <span className="deal-tag cadence">{cadenceStep.hint}</span>}
+        </div>
+      ) : null}
 
       {deal.stage === "fechado" && (
         <div className="payment-summary">
@@ -279,27 +294,24 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
         </div>
       )}
 
-      <div
-        className="stage-pills"
-        role="group"
-        aria-label={`Status da proposta de ${deal.clientName || "cliente sem nome"}: ${stageLabel}`}
-      >
-        {STAGES.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            className={`stage-pill${deal.stage === s.id ? " active" : ""}`}
-            aria-pressed={deal.stage === s.id}
-            onClick={() => handleStageClick(s.id)}
-          >
-            {s.label}
-          </button>
-        ))}
+      <div className="deal-card-bar">
+        <label className={`stage-select stage-${deal.stage}`}>
+          <span className="visually-hidden">Status da proposta de {deal.clientName || "cliente sem nome"}</span>
+          <span className="stage-select-dot" aria-hidden="true" />
+          <select value={deal.stage} onChange={(e) => handleStageClick(e.target.value)}>
+            {STAGES.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon />
+        </label>
+        <button type="button" className="deal-expand-btn" aria-expanded={expanded} onClick={() => setExpanded((e) => !e)}>
+          {expanded ? "Fechar" : "Ações"}
+          <ChevronDownIcon />
+        </button>
       </div>
-
-      <button type="button" className="link-btn" onClick={() => setExpanded((e) => !e)}>
-        {expanded ? "Recolher ▲" : "Ver detalhes ▾"}
-      </button>
 
       {expanded && (
         <>
@@ -460,16 +472,20 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
 
             <div className="deal-actions">
               <button type="button" className="icon-action-btn primary" onClick={() => setPresenting(true)}>
+                <PresentationIcon />
                 Apresentar
               </button>
               <button type="button" className="icon-action-btn" onClick={sendWhatsApp}>
+                <MessageIcon />
                 WhatsApp
               </button>
               <button type="button" className="icon-action-btn" onClick={sendEmail}>
+                <MailIcon />
                 E-mail
               </button>
               <button type="button" className="icon-action-btn" onClick={handleDownloadPdf} disabled={pdfState === "loading"}>
-                {pdfState === "loading" ? "Gerando..." : pdfState === "done" ? "✓ Baixado" : "PDF"}
+                <DownloadIcon />
+                {pdfState === "loading" ? "Gerando..." : pdfState === "done" ? "Baixado" : "PDF"}
               </button>
               <button
                 type="button"
@@ -477,6 +493,7 @@ function DealCard({ deal, company, onEdit, onDelete, onChangeStage, onSetFollowU
                 onClick={() => onDelete(deal.id!)}
                 aria-label={`Excluir proposta de ${deal.clientName || "cliente sem nome"}`}
               >
+                <TrashIcon />
                 Excluir
               </button>
             </div>
@@ -508,17 +525,27 @@ export function AlertsPanel({ deals }: { deals: Deal[] }) {
   if (pending.length === 0) return null;
 
   return (
-    <div className="panel" role="status" style={{ marginBottom: 16, borderColor: "var(--red-400)" }}>
-      <h2 className="panel-title">Hoje você precisa falar com {pending.length} cliente(s)</h2>
-      {pending.map((d) => {
-        const days = daysSince(d.sentAt);
-        return (
-          <p key={d.id}>
-            <strong>{d.clientName}</strong>
-            {days !== null ? ` — recebeu a proposta há ${days} dia(s)` : ""}
-          </p>
-        );
-      })}
+    <div className="followup-alert" role="status">
+      <div className="followup-alert-icon" aria-hidden="true">
+        <BellIcon />
+      </div>
+      <div className="followup-alert-body">
+        <h2 className="followup-alert-title">
+          Hoje você precisa falar com {pending.length} {pending.length === 1 ? "cliente" : "clientes"}
+        </h2>
+        <ul className="followup-alert-list">
+          {pending.map((d) => {
+            const days = daysSince(d.sentAt);
+            return (
+              <li key={d.id}>
+                <strong>{d.clientName}</strong>
+                {days !== null ? ` recebeu a proposta há ${days} ${days === 1 ? "dia" : "dias"}` : ""}
+                {d.valorFinal ? <span className="followup-alert-value">{formatBRL(d.valorFinal)}</span> : null}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -554,6 +581,9 @@ export default function ProposalsBoard(props: Props) {
       <AlertsPanel deals={deals} />
 
       <div className="funil-search">
+        <span className="funil-search-icon" aria-hidden="true">
+          <SearchIcon />
+        </span>
         <input
           className="input"
           type="search"
@@ -590,9 +620,7 @@ export default function ProposalsBoard(props: Props) {
                 </div>
                 <span className="funil-col-title">
                   {stage.label}
-                  <span className="microlabel" style={{ display: "block" }}>
-                    {formatBRL(totalValue)}
-                  </span>
+                  <span className="funil-col-total">{formatBRL(totalValue)}</span>
                 </span>
                 <span className="funil-count">{items.length}</span>
               </div>
@@ -601,7 +629,7 @@ export default function ProposalsBoard(props: Props) {
                   <DealCard key={deal.id} deal={deal} {...props} />
                 ))}
                 {items.length === 0 && (
-                  <p className="microlabel">{search ? "Nada encontrado nessa coluna." : "Nenhuma proposta."}</p>
+                  <p className="funil-empty">{search ? "Nada encontrado nessa coluna." : "Nenhuma proposta aqui."}</p>
                 )}
               </div>
             </section>
